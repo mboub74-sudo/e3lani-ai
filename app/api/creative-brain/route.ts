@@ -31,7 +31,12 @@ function make(angle:string,p:Product,i:number):Creative{
  return {angle,hook,script:middle[angle]||middle["فضول وتشويق"],cta:pick(ctas,seed+7),shots};
 }
 export async function POST(req:NextRequest){
- try{const {product,angles}=await req.json() as {product:Product;angles:string[]};if(!product||!Array.isArray(angles)||!angles.length)return NextResponse.json({error:"بيانات المنتج والزوايا مطلوبة"},{status:400});
- const creatives=angles.flatMap((a,i)=>[make(a,product,i),make(a,product,i+101)]);return NextResponse.json({engine:"Saudi Creative Brain V1 — No API",creatives});
+ try{const {product,angles,tone="UGC",season="تلقائي"}=await req.json() as {product:Product;angles:string[];tone?:string;season?:string};if(!product||!Array.isArray(angles)||!angles.length)return NextResponse.json({error:"بيانات المنتج والزوايا مطلوبة"},{status:400});
+ const now=new Date();const m=now.getUTCMonth()+1,d=now.getUTCDate();let resolved=season;
+ if(season==="تلقائي"){if(m===9&&d>=10&&d<=30)resolved="اليوم الوطني";else if((m===2&&d>=15)||m===3)resolved="رمضان";else if(d>=25)resolved="Payday";else resolved="عادي";}
+ const seasonLine:Record<string,string>={"رمضان":"رمضان فرصة تخلي عرضك أقرب لعملائك.","العيد":"خل فرحة العيد تبدأ باختيار مرتب.","اليوم الوطني":"احتفل باليوم الوطني بعرض يستاهل 🇸🇦","يوم التأسيس":"في يوم التأسيس، تفاصيلنا تحكي ذوقنا 🇸🇦","Payday":"نزل الراتب؟ هذا وقت العرض اللي كنت تنتظره.","عادي":""};
+ const tonePrefix:Record<string,string>={"UGC":"بأسلوب تجربة طبيعية: ","Premium":"بأسلوب راقٍ وهادئ: ","Direct Response":"بأسلوب مباشر للبيع: ","Emotional":"بأسلوب عاطفي: "};
+ const creatives=angles.flatMap((ang,i)=>[make(ang,product,i),make(ang,product,i+101)]).map(c=>({...c,hook:(seasonLine[resolved]?seasonLine[resolved]+" ":"")+c.hook,script:(tonePrefix[tone]||"")+c.script}));
+ return NextResponse.json({engine:"Saudi Creative Brain V2 — No API",tone,season:resolved,creatives});
  }catch{return NextResponse.json({error:"تعذر إنشاء الحملة حالياً"},{status:500})}
 }
